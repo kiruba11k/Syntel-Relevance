@@ -78,7 +78,7 @@ class LinkedInProfileAnalyzer:
         try:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama3-70b-8192",
+                model="llama-3.1-8b-instant",
                 temperature=0.3,
                 max_tokens=1500
             )
@@ -164,7 +164,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div class="main-header">🔍 LinkedIn Profile Analyzer</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header"> LinkedIn Profile Analyzer</div>', unsafe_allow_html=True)
     st.markdown("### Paste LinkedIn Profile Information Below")
     
     # Initialize Groq client
@@ -232,7 +232,7 @@ def main():
                 else:
                     st.markdown(f"""
                     <div class="relevance-low">
-                        <h3>⚡ {relevance.upper()} RELEVANCE - Limited Influence</h3>
+                        <h3> {relevance.upper()} RELEVANCE - Limited Influence</h3>
                         <p>This person has limited involvement in IT infrastructure decisions</p>
                     </div>
                     """, unsafe_allow_html=True)
