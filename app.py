@@ -30,17 +30,15 @@ class LinkedInProfileAnalyzer:
         
         CONTEXT FOR ANALYSIS:
         - Our Company: Syntel + Altai Super Wi-Fi (Enterprise Wi-Fi/Network Infrastructure)
-        - We sell to: CIO, CTO, IT Infrastructure Manager, Network Architect, Operations Head
+        - We sell Wi-Fi and network infrastructure solutions
+        - Target Roles: CIO, CTO, IT Infrastructure Manager, Network Architect, Operations Head
         - Target Industries: Manufacturing, Warehouses, BFSI, Education, Healthcare, Hospitality
         - Geography Focus: India
         
         EXTRACT THESE DETAILS FROM THE PROFILE:
-        1. Full Name
-        2. Current Designation/Title
-        3. Current Company
-        4. Industry/Sector
-        5. Location/Geography
-        6. Key Responsibilities
+        1. Current Designation/Title
+        2. Location/Geography
+        3. Key Responsibilities
         
         THEN ANALYZE FOR:
         
@@ -55,23 +53,17 @@ class LinkedInProfileAnalyzer:
         - How their role aligns with Wi-Fi/network infrastructure needs  
         - Their potential influence on IT buying decisions
         - Specific responsibilities that could influence network decisions
-        - Why they are/aren't the ideal persona for enterprise Wi-Fi
-        
-        IF NOT RELEVANT: Recommend exact persona to target instead
         
         GEOGRAPHY: Extract primary location from profile
         
+        IF NOT RELEVANT: Recommend exact persona to target instead in 'who_is_relevant' field
+        
         RETURN STRICT JSON FORMAT:
         {{
-            "name": "extracted name",
-            "designation": "extracted designation", 
-            "company": "extracted company",
-            "industry": "extracted industry",
-            "geography": "extracted location",
             "designation_relevance": "High/Medium/Low/No",
             "how_relevant": "Detailed analysis here...",
-            "recommended_target": "If not relevant, who to target instead",
-            "next_steps": "Recommended engagement strategy"
+            "geography": "extracted location",
+            "who_is_relevant": "If not relevant, who to target instead"
         }}
         """
         
@@ -90,82 +82,29 @@ class LinkedInProfileAnalyzer:
             if json_match:
                 return json.loads(json_match.group())
             else:
-                return self._fallback_analysis(linkedin_text)
+                return self._fallback_analysis()
                 
         except Exception as e:
             st.error(f"Analysis error: {e}")
-            return self._fallback_analysis(linkedin_text)
+            return self._fallback_analysis()
     
-    def _fallback_analysis(self, linkedin_text: str) -> Dict:
+    def _fallback_analysis(self) -> Dict:
         """Fallback analysis when Groq fails"""
         return {
-            "name": "Extraction Failed",
-            "designation": "Unknown", 
-            "company": "Unknown",
-            "industry": "Unknown",
-            "geography": "India",
             "designation_relevance": "Low",
             "how_relevant": "Manual analysis required - AI extraction failed",
-            "recommended_target": "CIO/Head of IT",
-            "next_steps": "Manual research needed"
+            "geography": "India",
+            "who_is_relevant": "CIO/Head of IT"
         }
 
 def main():
     st.set_page_config(
         page_title="LinkedIn Profile Analyzer",
-        page_icon="",
         layout="wide"
     )
     
-    # Custom CSS
-    st.markdown("""
-    <style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #1E3A8A;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .relevance-high { 
-        background-color: #D1FAE5; 
-        padding: 15px; 
-        border-radius: 10px; 
-        border-left: 5px solid #059669;
-        margin: 10px 0;
-    }
-    .relevance-medium { 
-        background-color: #FEF3C7; 
-        padding: 15px; 
-        border-radius: 10px; 
-        border-left: 5px solid #D97706;
-        margin: 10px 0;
-    }
-    .relevance-low { 
-        background-color: #FEE2E2; 
-        padding: 15px; 
-        border-radius: 10px; 
-        border-left: 5px solid #DC2626;
-        margin: 10px 0;
-    }
-    .profile-card { 
-        background-color: #F8FAFC; 
-        padding: 20px; 
-        border-radius: 10px; 
-        margin: 10px 0;
-        border-left: 5px solid #3B82F6;
-    }
-    .analysis-section {
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #E5E7EB;
-        margin: 10px 0;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('<div class="main-header"> LinkedIn Profile Analyzer</div>', unsafe_allow_html=True)
-    st.markdown("### Paste LinkedIn Profile Information Below")
+    st.title("LinkedIn Profile Analyzer for Wi-Fi Solutions")
+    st.markdown("Paste LinkedIn profile information below for analysis")
     
     # Initialize Groq client
     client = init_groq_client()
@@ -175,128 +114,94 @@ def main():
     
     analyzer = LinkedInProfileAnalyzer(client)
     
-    # Main input area
-    linkedin_text = st.text_area(
-        "Paste LinkedIn Profile Information",
-        placeholder="Paste the entire LinkedIn profile text here including:\n• Name\n• Current position\n• Company\n• Location\n• Experience\n• Responsibilities\n• Education\n• Any other profile details...",
-        height=300,
-        help="Copy and paste all visible text from the LinkedIn profile"
-    )
+    # Tab interface
+    tab1, tab2 = st.tabs(["Single Profile Analysis", "Batch Analysis"])
     
-    if st.button("Analyze Profile", type="primary", use_container_width=True):
-        if not linkedin_text.strip():
-            st.warning("Please paste LinkedIn profile information to analyze")
-        else:
-            with st.spinner(" AI is analyzing the profile..."):
-                analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
-                
-                # Display results in a structured format
-                st.markdown("---")
-                st.markdown("##  Analysis Results")
-                
-                # Profile Summary Card
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Name", analysis_result.get('name', 'N/A'))
-                with col2:
-                    st.metric("Designation", analysis_result.get('designation', 'N/A'))
-                with col3:
-                    st.metric("Company", analysis_result.get('company', 'N/A'))
-                
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    st.metric("Industry", analysis_result.get('industry', 'N/A'))
-                with col5:
-                    st.metric("Geography", analysis_result.get('geography', 'N/A'))
-                with col6:
-                    relevance = analysis_result.get('designation_relevance', 'Low')
-                    st.metric("Relevance Score", relevance)
-                
-                # Relevance Visualization
-                st.markdown("###  Designation Relevance")
-                relevance = analysis_result.get('designation_relevance', 'Low')
-                if relevance == 'High':
-                    st.markdown(f"""
-                    <div class="relevance-high">
-                        <h3> HIGH RELEVANCE - Ideal Target</h3>
-                        <p>This person is directly involved in IT/Network infrastructure decisions</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                elif relevance == 'Medium':
-                    st.markdown(f"""
-                    <div class="relevance-medium">
-                        <h3> MEDIUM RELEVANCE - Good Prospect</h3>
-                        <p>This person has indirect influence on infrastructure decisions</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="relevance-low">
-                        <h3> {relevance.upper()} RELEVANCE - Limited Influence</h3>
-                        <p>This person has limited involvement in IT infrastructure decisions</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Detailed Analysis
-                st.markdown("###  How is this person relevant?")
-                st.markdown(f'<div class="analysis-section">{analysis_result.get("how_relevant", "No analysis available")}</div>', unsafe_allow_html=True)
-                
-                # Recommendations for non-relevant profiles
-                if relevance in ['Low', 'No']:
-                    st.markdown("###  Recommended Alternative Target")
-                    st.info(analysis_result.get('recommended_target', 'CIO/Head of IT Infrastructure'))
-                
-                # Next Steps
-                st.markdown("###  Recommended Next Steps")
-                st.success(analysis_result.get('next_steps', 'Schedule a discovery call to discuss Wi-Fi infrastructure needs'))
-
-# Batch Analysis Section
-def batch_analysis():
-    st.markdown("---")
-    st.markdown("##  Batch Analysis (Multiple Profiles)")
-    
-    uploaded_file = st.file_uploader("Upload text file with LinkedIn profiles", type="txt", 
-                                   help="Upload a .txt file where each profile is separated by '===PROFILE==='")
-    
-    if uploaded_file is not None:
-        content = uploaded_file.getvalue().decode("utf-8")
-        profiles = content.split("===PROFILE===")
+    with tab1:
+        st.header("Single Profile Analysis")
         
-        st.write(f"Found {len(profiles)} profiles in file")
+        linkedin_text = st.text_area(
+            "LinkedIn Profile Information",
+            placeholder="Paste the entire LinkedIn profile text here including name, current position, company, location, experience, responsibilities, etc.",
+            height=300
+        )
         
-        if st.button("Analyze All Profiles", type="primary"):
-            client = init_groq_client()
-            if not client:
-                return
+        if st.button("Analyze Profile", type="primary"):
+            if not linkedin_text.strip():
+                st.warning("Please paste LinkedIn profile information to analyze")
+            else:
+                with st.spinner("AI is analyzing the profile..."):
+                    analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
+                    
+                    # Create results table
+                    results_data = {
+                        "Designation Relevance": [analysis_result.get('designation_relevance', 'Low')],
+                        "How is he relevant": [analysis_result.get('how_relevant', 'No analysis available')],
+                        "Geography": [analysis_result.get('geography', 'India')],
+                        "Who is relevant then": [analysis_result.get('who_is_relevant', 'N/A')]
+                    }
+                    
+                    results_df = pd.DataFrame(results_data)
+                    
+                    st.header("Analysis Results")
+                    st.table(results_df)
+    
+    with tab2:
+        st.header("Batch Profile Analysis")
+        
+        uploaded_file = st.file_uploader(
+            "Upload text file with LinkedIn profiles", 
+            type="txt", 
+            help="Upload a .txt file where each profile is separated by '===PROFILE==='"
+        )
+        
+        if uploaded_file is not None:
+            content = uploaded_file.getvalue().decode("utf-8")
+            profiles = [p.strip() for p in content.split("===PROFILE===") if p.strip()]
+            
+            st.write(f"Found {len(profiles)} profiles in file")
+            
+            if st.button("Analyze All Profiles", type="primary"):
+                client = init_groq_client()
+                if not client:
+                    return
+                    
+                analyzer = LinkedInProfileAnalyzer(client)
+                all_results = []
                 
-            analyzer = LinkedInProfileAnalyzer(client)
-            results = []
-            
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            for i, profile_text in enumerate(profiles):
-                if profile_text.strip():
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                for i, profile_text in enumerate(profiles):
                     status_text.text(f"Analyzing profile {i+1}/{len(profiles)}...")
-                    analysis = analyzer.extract_and_analyze_profile(profile_text.strip())
-                    results.append(analysis)
+                    analysis = analyzer.extract_and_analyze_profile(profile_text)
+                    all_results.append(analysis)
                     progress_bar.progress((i + 1) / len(profiles))
-            
-            # Create results dataframe
-            if results:
-                df = pd.DataFrame(results)
-                st.markdown("### Analysis Results")
-                st.dataframe(df)
                 
-                # Download results
-                csv = df.to_csv(index=False)
-                st.download_button(
-                    label=" Download Results as CSV",
-                    data=csv,
-                    file_name="linkedin_profiles_analysis.csv",
-                    mime="text/csv"
-                )
+                # Create results dataframe with required columns
+                if all_results:
+                    results_data = []
+                    for result in all_results:
+                        results_data.append({
+                            "Designation Relevance": result.get('designation_relevance', 'Low'),
+                            "How is he relevant": result.get('how_relevant', 'No analysis available'),
+                            "Geography": result.get('geography', 'India'),
+                            "Who is relevant then": result.get('who_is_relevant', 'N/A')
+                        })
+                    
+                    results_df = pd.DataFrame(results_data)
+                    
+                    st.header("Batch Analysis Results")
+                    st.table(results_df)
+                    
+                    # Download results
+                    csv = results_df.to_csv(index=False)
+                    st.download_button(
+                        label="Download Results as CSV",
+                        data=csv,
+                        file_name="linkedin_profiles_analysis.csv",
+                        mime="text/csv"
+                    )
 
 if __name__ == "__main__":
     main()
-    batch_analysis()
