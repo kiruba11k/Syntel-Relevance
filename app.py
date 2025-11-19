@@ -114,6 +114,28 @@ def main():
     
     analyzer = LinkedInProfileAnalyzer(client)
     
+    # Custom CSS for better table styling
+    st.markdown("""
+    <style>
+    .dataframe {
+        width: 100%;
+    }
+    .dataframe th {
+        background-color: #1E3A8A;
+        color: white;
+        padding: 10px;
+        text-align: left;
+    }
+    .dataframe td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+    .dataframe tr:hover {
+        background-color: #f5f5f5;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Tab interface
     tab1, tab2 = st.tabs(["Single Profile Analysis", "Batch Analysis"])
     
@@ -144,7 +166,34 @@ def main():
                     results_df = pd.DataFrame(results_data)
                     
                     st.header("Analysis Results")
-                    st.table(results_df)
+                    
+                    # Display with better formatting
+                    st.dataframe(
+                        results_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # Download options
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        csv = results_df.to_csv(index=False)
+                        st.download_button(
+                            label="Download as CSV",
+                            data=csv,
+                            file_name="profile_analysis.csv",
+                            mime="text/csv"
+                        )
+                    
+                    with col2:
+                        tsv = results_df.to_csv(index=False, sep='\t')
+                        st.download_button(
+                            label="Download as TSV",
+                            data=tsv,
+                            file_name="profile_analysis.tsv",
+                            mime="text/tab-separated-values"
+                        )
     
     with tab2:
         st.header("Batch Profile Analysis")
@@ -192,16 +241,34 @@ def main():
                     results_df = pd.DataFrame(results_data)
                     
                     st.header("Batch Analysis Results")
-                    st.table(results_df)
                     
-                    # Download results
-                    csv = results_df.to_csv(index=False)
-                    st.download_button(
-                        label="Download Results as CSV",
-                        data=csv,
-                        file_name="linkedin_profiles_analysis.csv",
-                        mime="text/csv"
+                    # Display with better formatting
+                    st.dataframe(
+                        results_df,
+                        use_container_width=True,
+                        hide_index=True
                     )
+                    
+                    # Download options
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        csv = results_df.to_csv(index=False)
+                        st.download_button(
+                            label="Download as CSV",
+                            data=csv,
+                            file_name="batch_analysis.csv",
+                            mime="text/csv"
+                        )
+                    
+                    with col2:
+                        tsv = results_df.to_csv(index=False, sep='\t')
+                        st.download_button(
+                            label="Download as TSV",
+                            data=tsv,
+                            file_name="batch_analysis.tsv",
+                            mime="text/tab-separated-values"
+                        )
 
 if __name__ == "__main__":
     main()
