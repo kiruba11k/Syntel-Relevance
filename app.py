@@ -11,7 +11,8 @@ def init_groq_client():
     """Initializes the Groq client, caching the resource."""
     try:
         # st.secrets is used to securely access environment variables/secrets
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        # NOTE: Replace with your actual Groq API Key initialization if not using Streamlit secrets
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"]) 
         return client
     except Exception as e:
         st.error(f"Failed to initialize Groq client. Please check your API key in Streamlit secrets: {e}")
@@ -44,22 +45,21 @@ class LinkedInProfileAnalyzer:
         
         DESIGNATION RELEVANCE (Choose one: High/Medium/Low/No):
         
-        Based on these strict criteria:
-        - **High**: Direct budget/decision authority AND main focus on 'IT Infrastructure', 'Network Infrastructure', 'Network Architect', 'Wireless', or 'IT Operations'. These are primary technical evaluators/buyers.
+        Based on the provided samples and the requirement to strictly classify indirect influence as LOW:
+        - **High**: Direct budget/decision authority AND main focus on 'IT Infrastructure', 'Network Infrastructure', 'Network Architect', 'Wireless', 'IT Operations', or 'Head of Engineering & Infra'. (Primary technical buyers/owners).
         
-        - **Medium**: **USE THIS CATEGORY RARELY.** ONLY for Group-level executive roles (e.g., VP Global Sourcing) whose sole focus is approving **all** major CAPEX/technology budgets but are not technical owners.
+        - **Medium**: **USE THIS CATEGORY RARELY.** ONLY for Group-level executive roles (e.g., Global Head of Sourcing/Procurement for Tech, Group VP/Director) whose primary function is approving **large, multi-site CapEx/vendor contracts**, influencing the commercial side of IT procurement, but are NOT technical owners.
         
         - **Low**: This includes:
-            1. **ALL indirect influence roles** (Operations Head, COO, Plant Head, **Supply Chain, Logistics**, General Procurement, EA to executive).
-            2. Any role whose technical focus is peripheral or tangential (e.g., WMS software, general automation, but not the underlying network).
-            3. Roles with Limited involvement in tech/infra decisions.
+            1. **ALL indirect influence roles** (e.g., Operations Head, COO, Plant Head, Supply Chain, Logistics, WMS/SAP Applications, General Procurement).
+            2. Roles with peripheral or limited involvement in tech/infra decisions.
             
-        - **No**: Completely irrelevant functional role (e.g., HR, Finance, Marketing, Non-technical Sales).
+        - **No**: Completely irrelevant functional role (e.g., HR, Finance, Marketing, Non-technical Sales, Hospitality Ops unrelated to property tech).
         
-        **CRITICAL ENFORCEMENT: A profile must be High if they own the network. If they own the outcomes that depend on the network (e.g., Supply Chain, Operations, WMS), they must be classified as Low, regardless of any past IT experience or indirect influence.**
+        **CRITICAL ENFORCEMENT: A profile must be High if they own the network. If they own outcomes dependent on the network (e.g., Supply Chain, WMS uptime, operational KPIs), they must be classified as Low, regardless of any past IT experience or job title.**
         
         HOW IS HE/SHE RELEVANT (Detailed Write-up):
-        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score. What the person is responsible for, how that aligns with Wi-Fi/network needs, and specific responsibilities that influence network decisions.
+        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score, including responsibilities that influence network decisions.
         - **IF LOW/NO**: **Concise** explanation of why they are not the ideal persona, focusing on the gap and the correct department/owner.
         
         IF NOT RELEVANT (i.e., Low or No relevance) → WHO TO TARGET + NEXT STEP:
@@ -78,8 +78,8 @@ class LinkedInProfileAnalyzer:
         try:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="openai/gpt-oss-120b",
-                temperature=0.3, # Low temperature for consistent, analytical output
+                model="llama-3.1-8b-instant",
+                temperature=0.3,
                 max_tokens=1500
             )
             
@@ -88,11 +88,9 @@ class LinkedInProfileAnalyzer:
             # Extract JSON from response using regex
             json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
             if json_match:
-                # Clean up the JSON string before loading (common issue with LLM output)
                 json_string = json_match.group().strip()
                 return json.loads(json_string)
             else:
-                # Fallback if JSON parsing fails
                 return self._fallback_analysis()
                 
         except Exception as e:
@@ -107,6 +105,7 @@ class LinkedInProfileAnalyzer:
             "target_persona": "CIO/Head of IT Infrastructure",
             "next_step": "Manual review of profile needed."
         }
+
 def main():
     st.set_page_config(
         page_title="LinkedIn Profile Analyzer",
@@ -116,7 +115,6 @@ def main():
     st.title("LinkedIn Profile Analyzer for Wi-Fi Solutions")
     st.markdown("Paste LinkedIn profile information below for analysis using custom relevance criteria.")
     
-    # Initialize Groq client
     client = init_groq_client()
     if not client:
         st.error("Application cannot run without a valid Groq client.")
@@ -124,7 +122,6 @@ def main():
     
     analyzer = LinkedInProfileAnalyzer(client)
     
-    # Custom CSS for better table styling
     st.markdown("""
     <style>
     .dataframe {
@@ -146,10 +143,8 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # Tab interface
     tab1, tab2 = st.tabs(["Single Profile Analysis", "Batch Analysis"])
     
-    # --- Single Profile Analysis Tab ---
     with tab1:
         st.header("Single Profile Analysis")
         
@@ -166,7 +161,6 @@ def main():
                 with st.spinner("AI is analyzing the profile..."):
                     analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
                     
-                    # Create results DataFrame with all 4 final columns
                     results_data = {
                         "Designation Relevance": [analysis_result.get('designation_relevance', 'No')],
                         "How is he relevant": [analysis_result.get('how_relevant', 'No analysis available')],
@@ -184,7 +178,6 @@ def main():
                         hide_index=True
                     )
                     
-                    # Download options
                     col1, col2 = st.columns(2)
                     with col1:
                         csv = results_df.to_csv(index=False)
@@ -203,7 +196,6 @@ def main():
                             mime="text/tab-separated-values"
                         )
 
-    # --- Batch Analysis Tab ---
     with tab2:
         st.header("Batch Profile Analysis")
         
@@ -235,7 +227,6 @@ def main():
                 
                 status_text.text("Batch analysis complete.")
                 
-                # Create results dataframe with required columns
                 if all_results:
                     results_data_list = []
                     for result in all_results:
@@ -256,7 +247,6 @@ def main():
                         hide_index=True
                     )
                     
-                    # Download options
                     col1, col2 = st.columns(2)
                     with col1:
                         csv = results_df.to_csv(index=False)
