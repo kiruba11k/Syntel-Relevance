@@ -46,11 +46,17 @@ class LinkedInProfileAnalyzer:
         
         Based on these strict criteria:
         - **High**: Direct budget/decision authority AND main focus on 'IT Infrastructure', 'Network Infrastructure', 'Network Architect', 'Wireless', or 'IT Operations'. These are primary technical evaluators/buyers.
-        - **Medium**: Reserved for only the most senior roles with high-level influence over group strategy, budget, and purchasing process (e.g., Global Head of Sourcing/Procurement for Tech, Group COO) but who are NOT technical owners.
-        - **Low**: This includes **ALL indirect influence roles** (Operations Head, COO, Plant Head, Supply Chain, Logistics, General Procurement, EA to executive) AND Limited involvement in tech/infra decisions.
-        - **No**: Completely irrelevant role (e.g., HR, Finance, Marketing, Non-technical Sales).
         
-        **CRITICAL INSTRUCTION: Any role with INDIRECT influence must be classified as Low. Only direct owners of IT/Network infrastructure are High.**
+        - **Medium**: **USE THIS CATEGORY RARELY.** ONLY for Group-level executive roles (e.g., VP Global Sourcing) whose sole focus is approving **all** major CAPEX/technology budgets but are not technical owners.
+        
+        - **Low**: This includes:
+            1. **ALL indirect influence roles** (Operations Head, COO, Plant Head, **Supply Chain, Logistics**, General Procurement, EA to executive).
+            2. Any role whose technical focus is peripheral or tangential (e.g., WMS software, general automation, but not the underlying network).
+            3. Roles with Limited involvement in tech/infra decisions.
+            
+        - **No**: Completely irrelevant functional role (e.g., HR, Finance, Marketing, Non-technical Sales).
+        
+        **CRITICAL ENFORCEMENT: A profile must be High if they own the network. If they own the outcomes that depend on the network (e.g., Supply Chain, Operations, WMS), they must be classified as Low, regardless of any past IT experience or indirect influence.**
         
         HOW IS HE/SHE RELEVANT (Detailed Write-up):
         - **IF HIGH/MEDIUM**: Detailed write-up justifying the score. What the person is responsible for, how that aligns with Wi-Fi/network needs, and specific responsibilities that influence network decisions.
@@ -101,7 +107,6 @@ class LinkedInProfileAnalyzer:
             "target_persona": "CIO/Head of IT Infrastructure",
             "next_step": "Manual review of profile needed."
         }
-
 def main():
     st.set_page_config(
         page_title="LinkedIn Profile Analyzer",
