@@ -49,24 +49,57 @@ class LinkedInProfileAnalyzer:
         - No: No relevance to IT infrastructure
         
         HOW IS HE RELEVANT (Detailed Analysis):
-        - What they are responsible for based on profile
-        - How their role aligns with Wi-Fi/network infrastructure needs  
-        - Their potential influence on IT buying decisions
-        - Specific responsibilities that could influence network decisions
+        - **IF HIGH/MEDIUM RELEVANCE:** Provide a detailed analysis on how their role aligns with Wi-Fi/network infrastructure needs, potential influence, and specific responsibilities.
+        - **IF LOW/NO RELEVANCE:** The analysis must be **concise**. State clearly why the person is not the primary target and immediately state who the relevant persona is. **Do not list non-relevant duties.** Focus on the gap.
         
         GEOGRAPHY: Extract primary location from profile
         
-        IF NOT RELEVANT: Recommend exact persona to target instead in 'who_is_relevant' field
+        IF NOT RELEVANT: Recommend exact persona to target instead in 'who_is_relevant' field (e.g., 'Head of IT Infrastructure', 'Plant Head', 'CIO').
         
         RETURN STRICT JSON FORMAT:
         {{
             "designation_relevance": "High/Medium/Low/No",
-            "how_relevant": "Detailed analysis here...",
+            "how_relevant": "Detailed analysis for High/Medium. CONCISE REASON & RELEVANT TARGET for Low/No.",
             "geography": "extracted location",
             "who_is_relevant": "If not relevant, who to target instead"
         }}
         """
         
+        try:
+            response = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.1-8b-instant",
+                temperature=0.3,
+                max_tokens=1500
+            )
+            
+            result_text = response.choices[0].message.content.strip()
+            
+            # Extract JSON from response
+            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+            else:
+                # Fallback to a clear error indicator in the JSON structure
+                return {
+                    "designation_relevance": "Error",
+                    "how_relevant": f"JSON parsing failed. Raw response snippet: {result_text[:200]}...",
+                    "geography": "N/A",
+                    "who_is_relevant": "CIO/Head of IT"
+                }
+                
+        except Exception as e:
+            st.error(f"Analysis error: {e}")
+            return self._fallback_analysis()
+    
+    def _fallback_analysis(self) -> Dict:
+        """Fallback analysis when Groq fails"""
+        return {
+            "designation_relevance": "Low",
+            "how_relevant": "Manual analysis required - AI extraction failed",
+            "geography": "India",
+            "who_is_relevant": "CIO/Head of IT"
+        }        
         try:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
