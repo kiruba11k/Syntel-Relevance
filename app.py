@@ -3,24 +3,29 @@ import pandas as pd
 from groq import Groq
 import json
 import re
-from typing import Dict
+from typing import Dict, Any
 
 # Initialize Groq client
 @st.cache_resource
 def init_groq_client():
+    """Initializes the Groq client, caching the resource."""
     try:
+        # st.secrets is used to securely access environment variables/secrets
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         return client
     except Exception as e:
-        st.error(f"Failed to initialize Groq client: {e}")
+        st.error(f"Failed to initialize Groq client. Please check your API key in Streamlit secrets: {e}")
         return None
 
 class LinkedInProfileAnalyzer:
     def __init__(self, client):
         self.client = client
     
-    def extract_and_analyze_profile(self, linkedin_text: str) -> Dict:
-        """Extract all information from LinkedIn profile text and analyze using Groq"""
+    def extract_and_analyze_profile(self, linkedin_text: str) -> Dict[str, Any]:
+        """
+        Extracts information from LinkedIn profile text and analyzes its relevance 
+        to Wi-Fi/Network Infrastructure sales using Groq and strict criteria.
+        """
         
         prompt = f"""
         EXTRACT AND ANALYZE THIS LINKEDIN PROFILE FOR Wi-Fi/NETWORK INFRASTRUCTURE SOLUTIONS
@@ -31,37 +36,36 @@ class LinkedInProfileAnalyzer:
         CONTEXT FOR ANALYSIS:
         - Our Company: Syntel + Altai Super Wi-Fi (Enterprise Wi-Fi/Network Infrastructure)
         - We sell Wi-Fi and network infrastructure solutions
-        - Target Roles: CIO, CTO, IT Infrastructure Manager, Network Architect, Operations Head
+        - Target Roles: CIO, CTO, IT Infrastructure Manager, Network Architect, Operations Head, Head of Automation
         - Target Industries: Manufacturing, Warehouses, BFSI, Education, Healthcare, Hospitality
         - Geography Focus: India
-        
-        EXTRACT THESE DETAILS FROM THE PROFILE:
-        1. Current Designation/Title
-        2. Location/Geography
-        3. Key Responsibilities
         
         THEN ANALYZE FOR:
         
         DESIGNATION RELEVANCE (Choose one: High/Medium/Low/No):
-        - High: Direct IT/Network infrastructure roles (CIO, CTO, IT Infrastructure Manager, Network Architect, Wireless Engineer)
-        - Medium: Indirect influence (Operations Head, Facilities Manager, COO, Head of Plant)
-        - Low: Limited involvement in IT decisions
-        - No: No relevance to IT infrastructure
         
-        HOW IS HE RELEVANT (Detailed Analysis):
-        - **IF HIGH/MEDIUM RELEVANCE:** Provide a detailed analysis on how their role aligns with Wi-Fi/network infrastructure needs, potential influence, and specific responsibilities.
-        - **IF LOW/NO RELEVANCE:** The analysis must be **concise**. State clearly why the person is not the primary target and immediately state who the relevant persona is. **Do not list non-relevant duties.** Focus on the gap.
+        Based on these strict criteria:
+        - **High**: Direct budget/decision authority AND main focus on 'IT Infrastructure', 'Network Infrastructure', 'Network Architect', 'Wireless', or 'IT Operations'. These are primary technical evaluators/buyers.
+        - **Medium**: Reserved for only the most senior roles with high-level influence over group strategy, budget, and purchasing process (e.g., Global Head of Sourcing/Procurement for Tech, Group COO) but who are NOT technical owners.
+        - **Low**: This includes **ALL indirect influence roles** (Operations Head, COO, Plant Head, Supply Chain, Logistics, General Procurement, EA to executive) AND Limited involvement in tech/infra decisions.
+        - **No**: Completely irrelevant role (e.g., HR, Finance, Marketing, Non-technical Sales).
         
-        GEOGRAPHY: Extract primary location from profile
+        **CRITICAL INSTRUCTION: Any role with INDIRECT influence must be classified as Low. Only direct owners of IT/Network infrastructure are High.**
         
-        IF NOT RELEVANT: Recommend exact persona to target instead in 'who_is_relevant' field (e.g., 'Head of IT Infrastructure', 'Plant Head', 'CIO').
+        HOW IS HE/SHE RELEVANT (Detailed Write-up):
+        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score. What the person is responsible for, how that aligns with Wi-Fi/network needs, and specific responsibilities that influence network decisions.
+        - **IF LOW/NO**: **Concise** explanation of why they are not the ideal persona, focusing on the gap and the correct department/owner.
+        
+        IF NOT RELEVANT (i.e., Low or No relevance) → WHO TO TARGET + NEXT STEP:
+        - **Target Persona**: Exact persona(s) we should target (e.g., Head of IT Infra, CIO, Head of Automation).
+        - **Next Step**: Recommended next action for our sales rep (e.g., 'Ask for a warm intro to CIO', 'New connect request to Head of IT', 'Direct cold email').
         
         RETURN STRICT JSON FORMAT:
         {{
             "designation_relevance": "High/Medium/Low/No",
-            "how_relevant": "Detailed analysis for High/Medium. CONCISE REASON & RELEVANT TARGET for Low/No.",
-            "geography": "extracted location",
-            "who_is_relevant": "If not relevant, who to target instead"
+            "how_relevant": "Detailed write-up justifying the relevance score and decision influence.",
+            "target_persona": "If Low/No, the exact person to target instead (e.g., Head of IT Infra)",
+            "next_step": "If Low/No, the recommended next action for the sales rep."
         }}
         """
         
@@ -69,65 +73,33 @@ class LinkedInProfileAnalyzer:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
-                temperature=0.3,
+                temperature=0.3, # Low temperature for consistent, analytical output
                 max_tokens=1500
             )
             
             result_text = response.choices[0].message.content.strip()
             
-            # Extract JSON from response
+            # Extract JSON from response using regex
             json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
+                # Clean up the JSON string before loading (common issue with LLM output)
+                json_string = json_match.group().strip()
+                return json.loads(json_string)
             else:
-                # Fallback to a clear error indicator in the JSON structure
-                return {
-                    "designation_relevance": "Error",
-                    "how_relevant": f"JSON parsing failed. Raw response snippet: {result_text[:200]}...",
-                    "geography": "N/A",
-                    "who_is_relevant": "CIO/Head of IT"
-                }
-                
-        except Exception as e:
-            st.error(f"Analysis error: {e}")
-            return self._fallback_analysis()
-    
-    def _fallback_analysis(self) -> Dict:
-        """Fallback analysis when Groq fails"""
-        return {
-            "designation_relevance": "Low",
-            "how_relevant": "Manual analysis required - AI extraction failed",
-            "geography": "India",
-            "who_is_relevant": "CIO/Head of IT"
-        }        
-        try:
-            response = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
-                temperature=0.3,
-                max_tokens=1500
-            )
-            
-            result_text = response.choices[0].message.content.strip()
-            
-            # Extract JSON from response
-            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group())
-            else:
+                # Fallback if JSON parsing fails
                 return self._fallback_analysis()
                 
         except Exception as e:
             st.error(f"Analysis error: {e}")
             return self._fallback_analysis()
     
-    def _fallback_analysis(self) -> Dict:
-        """Fallback analysis when Groq fails"""
+    def _fallback_analysis(self) -> Dict[str, Any]:
+        """Fallback analysis when Groq fails or JSON is unparseable."""
         return {
-            "designation_relevance": "Low",
-            "how_relevant": "Manual analysis required - AI extraction failed",
-            "geography": "India",
-            "who_is_relevant": "CIO/Head of IT"
+            "designation_relevance": "No",
+            "how_relevant": "Manual analysis required - AI extraction failed.",
+            "target_persona": "CIO/Head of IT Infrastructure",
+            "next_step": "Manual review of profile needed."
         }
 
 def main():
@@ -137,12 +109,12 @@ def main():
     )
     
     st.title("LinkedIn Profile Analyzer for Wi-Fi Solutions")
-    st.markdown("Paste LinkedIn profile information below for analysis")
+    st.markdown("Paste LinkedIn profile information below for analysis using custom relevance criteria.")
     
     # Initialize Groq client
     client = init_groq_client()
     if not client:
-        st.error("Please check your Groq API key in Streamlit secrets")
+        st.error("Application cannot run without a valid Groq client.")
         return
     
     analyzer = LinkedInProfileAnalyzer(client)
@@ -172,12 +144,13 @@ def main():
     # Tab interface
     tab1, tab2 = st.tabs(["Single Profile Analysis", "Batch Analysis"])
     
+    # --- Single Profile Analysis Tab ---
     with tab1:
         st.header("Single Profile Analysis")
         
         linkedin_text = st.text_area(
             "LinkedIn Profile Information",
-            placeholder="Paste the entire LinkedIn profile text here including name, current position, company, location, experience, responsibilities, etc.",
+            placeholder="Paste the entire LinkedIn profile text here...",
             height=300
         )
         
@@ -188,19 +161,18 @@ def main():
                 with st.spinner("AI is analyzing the profile..."):
                     analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
                     
-                    # Create results table
+                    # Create results DataFrame with all 4 final columns
                     results_data = {
-                        "Designation Relevance": [analysis_result.get('designation_relevance', 'Low')],
+                        "Designation Relevance": [analysis_result.get('designation_relevance', 'No')],
                         "How is he relevant": [analysis_result.get('how_relevant', 'No analysis available')],
-                        "Geography": [analysis_result.get('geography', 'India')],
-                        "Who is relevant then": [analysis_result.get('who_is_relevant', 'N/A')]
+                        "Target Persona (If Low/No)": [analysis_result.get('target_persona', 'N/A')],
+                        "Next Step (If Low/No)": [analysis_result.get('next_step', 'N/A')]
                     }
                     
                     results_df = pd.DataFrame(results_data)
                     
                     st.header("Analysis Results")
                     
-                    # Display with better formatting
                     st.dataframe(
                         results_df,
                         use_container_width=True,
@@ -209,7 +181,6 @@ def main():
                     
                     # Download options
                     col1, col2 = st.columns(2)
-                    
                     with col1:
                         csv = results_df.to_csv(index=False)
                         st.download_button(
@@ -218,7 +189,6 @@ def main():
                             file_name="profile_analysis.csv",
                             mime="text/csv"
                         )
-                    
                     with col2:
                         tsv = results_df.to_csv(index=False, sep='\t')
                         st.download_button(
@@ -227,7 +197,8 @@ def main():
                             file_name="profile_analysis.tsv",
                             mime="text/tab-separated-values"
                         )
-    
+
+    # --- Batch Analysis Tab ---
     with tab2:
         st.header("Batch Profile Analysis")
         
@@ -241,13 +212,10 @@ def main():
             content = uploaded_file.getvalue().decode("utf-8")
             profiles = [p.strip() for p in content.split("===PROFILE===") if p.strip()]
             
-            st.write(f"Found {len(profiles)} profiles in file")
+            st.info(f"Found **{len(profiles)}** profiles in file. Ready to analyze.")
             
             if st.button("Analyze All Profiles", type="primary"):
-                client = init_groq_client()
-                if not client:
-                    return
-                    
+                
                 analyzer = LinkedInProfileAnalyzer(client)
                 all_results = []
                 
@@ -260,22 +228,23 @@ def main():
                     all_results.append(analysis)
                     progress_bar.progress((i + 1) / len(profiles))
                 
+                status_text.text("Batch analysis complete.")
+                
                 # Create results dataframe with required columns
                 if all_results:
-                    results_data = []
+                    results_data_list = []
                     for result in all_results:
-                        results_data.append({
-                            "Designation Relevance": result.get('designation_relevance', 'Low'),
+                        results_data_list.append({
+                            "Designation Relevance": result.get('designation_relevance', 'No'),
                             "How is he relevant": result.get('how_relevant', 'No analysis available'),
-                            "Geography": result.get('geography', 'India'),
-                            "Who is relevant then": result.get('who_is_relevant', 'N/A')
+                            "Target Persona (If Low/No)": result.get('target_persona', 'N/A'),
+                            "Next Step (If Low/No)": result.get('next_step', 'N/A')
                         })
                     
-                    results_df = pd.DataFrame(results_data)
+                    results_df = pd.DataFrame(results_data_list)
                     
                     st.header("Batch Analysis Results")
                     
-                    # Display with better formatting
                     st.dataframe(
                         results_df,
                         use_container_width=True,
@@ -284,7 +253,6 @@ def main():
                     
                     # Download options
                     col1, col2 = st.columns(2)
-                    
                     with col1:
                         csv = results_df.to_csv(index=False)
                         st.download_button(
@@ -293,7 +261,6 @@ def main():
                             file_name="batch_analysis.csv",
                             mime="text/csv"
                         )
-                    
                     with col2:
                         tsv = results_df.to_csv(index=False, sep='\t')
                         st.download_button(
