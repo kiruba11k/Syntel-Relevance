@@ -11,8 +11,7 @@ def init_groq_client():
     """Initializes the Groq client, caching the resource."""
     try:
         # st.secrets is used to securely access environment variables/secrets
-        # NOTE: Replace with your actual Groq API Key initialization if not using Streamlit secrets
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"]) 
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         return client
     except Exception as e:
         st.error(f"Failed to initialize Groq client. Please check your API key in Streamlit secrets: {e}")
@@ -37,34 +36,31 @@ class LinkedInProfileAnalyzer:
         CONTEXT FOR ANALYSIS:
         - Our Company: Syntel + Altai Super Wi-Fi (Enterprise Wi-Fi/Network Infrastructure)
         - We sell Wi-Fi and network infrastructure solutions
-        - Target Roles: CIO, CTO, IT Infrastructure Manager, Network Architect, Operations Head, Head of Automation
-        - Target Industries: Manufacturing, Warehouses, BFSI, Education, Healthcare, Hospitality
+        - Target Industries: Manufacturing, Warehouses, BFSI, Education, Healthcare, Hospitality, Telecom, IT/ITES, FMCG, Unicorns, PSUs/Government
         - Geography Focus: India
         
         THEN ANALYZE FOR:
         
         DESIGNATION RELEVANCE (Choose one: High/Medium/Low/No):
         
-        Based on the provided samples and the requirement to strictly classify indirect influence as LOW:
-        - **High**: Direct budget/decision authority AND main focus on 'IT Infrastructure', 'Network Infrastructure', 'Network Architect', 'Wireless', 'IT Operations', or 'Head of Engineering & Infra'. (Primary technical buyers/owners).
+        Based on the provided Key Decision Makers and Influencers across industries:
+        - **High**: The primary technical or financial owner (Key Decision Maker). This includes: CIO, CTO, Head of IT, IT Director, Head of Network, IT Infrastructure Manager, and any dual CFO/CTO role.
         
-        - **Medium**: **USE THIS CATEGORY RARELY.** ONLY for Group-level executive roles (e.g., Global Head of Sourcing/Procurement for Tech, Group VP/Director) whose primary function is approving **large, multi-site CapEx/vendor contracts**, influencing the commercial side of IT procurement, but are NOT technical owners.
+        - **Medium**: Strategic Operational Leaders and Financial Gatekeepers (Key Decision Makers or Major Influencers). This includes: COO, Operations Head, General Manager (Hotels), Chief Medical Officer (CMO), Strategic Procurement/Sourcing Head, and CFO/Finance Manager (where they influence capex/tech ROI). These roles sponsor initiatives or approve large budgets.
         
-        - **Low**: This includes:
-            1. **ALL indirect influence roles** (e.g., Operations Head, COO, Plant Head, Supply Chain, Logistics, WMS/SAP Applications, General Procurement).
-            2. Roles with peripheral or limited involvement in tech/infra decisions.
+        - **Low**: Roles with operational dependency, site execution, or peripheral involvement (Minor Influencers or dependent users). This includes: Network Engineers, Facilities Manager, Procurement Manager/Purchase Head (non-strategic), Banking Operations Head, Department Heads, IT Operations Lead (zone-level), and application/software focus (WMS, SAP).
             
-        - **No**: Completely irrelevant functional role (e.g., HR, Finance, Marketing, Non-technical Sales, Hospitality Ops unrelated to property tech).
+        - **No**: Completely irrelevant functional role (e.g., HR, Marketing, Sales/BD, roles clearly outside the scope of influence or dependency).
         
-        **CRITICAL ENFORCEMENT: A profile must be High if they own the network. If they own outcomes dependent on the network (e.g., Supply Chain, WMS uptime, operational KPIs), they must be classified as Low, regardless of any past IT experience or job title.**
+        **CRITICAL ENFORCEMENT: Use the Medium category for strategic operational leaders (COO, Operations Head) as requested, to separate them from the technical owners (High) and the tactical/peripheral roles (Low).**
         
         HOW IS HE/SHE RELEVANT (Detailed Write-up):
-        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score, including responsibilities that influence network decisions.
+        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score, including what the person is responsible for and specific duties that influence Wi-Fi/network decisions (aligning with intent trigger).
         - **IF LOW/NO**: **Concise** explanation of why they are not the ideal persona, focusing on the gap and the correct department/owner.
         
         IF NOT RELEVANT (i.e., Low or No relevance) → WHO TO TARGET + NEXT STEP:
-        - **Target Persona**: Exact persona(s) we should target (e.g., Head of IT Infra, CIO, Head of Automation).
-        - **Next Step**: Recommended next action for our sales rep (e.g., 'Ask for a warm intro to CIO', 'New connect request to Head of IT', 'Direct cold email').
+        - **Target Persona**: Exact persona(s) we should target (e.g., Head of IT Infra, CIO, Head of Automation, GM Operations).
+        - **Next Step**: Recommended next action for our sales rep (e.g., 'new connect request', 'warm introduction', 'email', 'tele').
         
         RETURN STRICT JSON FORMAT:
         {{
