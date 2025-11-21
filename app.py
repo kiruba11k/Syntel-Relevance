@@ -38,36 +38,104 @@ class LinkedInProfileAnalyzer:
         - We sell Wi-Fi and network infrastructure solutions (Network Infra, Wi-Fi, IoT, OT/IT Integration)
         - Geography Focus: India
         
-        THEN ANALYZE FOR:
+        STRICT RELEVANCE CRITERIA - FOLLOW EXACTLY:
         
-        DESIGNATION RELEVANCE (Choose one: High/Medium/Low/No):
+        1. HIGH Relevance (Primary Buyers / Decision Makers)
+        A person is HIGH only if they directly own IT infrastructure or warehouse/port digital systems.
         
-        Based on the provided HIGH, MEDIUM, and LOW samples:
+        Conditions for HIGH (ANY of these):
+        A. Direct ownership of network / IT infra:
+           - Runs IT Infrastructure
+           - Runs Network Infrastructure  
+           - Runs Wi-Fi / wireless systems
+           - Runs Data centers / connectivity
+           - CIO / CTO / GM IT / Head IT Infra
+           - Any role that signs off network vendors
         
-        - **High**: Reserved for **Technical Owners** who also hold **Executive/Project/CAPEX Decision Authority**. This includes: CIO, CTO, Head of IT/Infra, Lead IT Project Manager, Chief Engineer, and strategic executive roles (COO/GM) who act as the **Executive Sponsor** for new facility commissioning, infra deployment, and technology decision-making (as seen in the samples).
+        B. Direct ownership of warehouse/port tech systems:
+           - Head of Automation
+           - Head of WMS / TOS
+           - Head of Digital Transformation (only infra-heavy)
+           - OT (Operational Technology) owner
+           - Smart Port / Smart Warehouse lead
+           - Engineering head responsible for scanners, IoT, rack systems, sensors
         
-        - **Medium**: **Technical Evaluators** or **Strategic Commercial/Sourcing Gatekeepers**. This includes: Deputy Manager IT (technical scoping), IT Operations Leads (zone-level/practical ownership of SLAs), and Strategic Procurement/Sourcing Heads (who influence RFQ/vendor commercial terms for IT/CapEx). Also includes operational roles that deeply influence **WMS/SAP integration/IoT adoption** but lack final infra sign-off (as seen in the GCPL samples).
+        C. Direct role in infra commissioning:
+           - Infra project manager (IT/Tech)
+           - Warehouse infrastructure lead
+           - Port technology commissioning lead
+           - They have: Budget authority, Technical evaluation responsibility, Vendor selection power
         
-        - **Low**: Roles with **Operational Dependency** or **Peripheral Function**. This includes: Logistics/SCM Manager (whose job is dependent on network, not owning it), General Procurement (material sourcing only), Executive Assistants, and professionals focused purely on dependent software (e.g., WMS apps, CRM) without technical network scope.
-            
-        - **No**: Completely irrelevant functional role (e.g., HR, Finance, pure Hospitality Ops, unrelated Sales/BD).
+        2. MEDIUM Relevance (Influencers / Operational Stakeholders)
+        A person is MEDIUM if they do NOT own infra but their operations depend on it.
         
-        **CRITICAL ENFORCEMENT: If a COO/Operations Head is sponsoring/leading a greenfield project with CAPEX authority, classify as High. If they are running day-to-day operations or WMS apps only, classify as Low/Medium.**
+        Conditions for MEDIUM (ANY of these):
+        A. Operational leaders affected by connectivity:
+           - COO
+           - Head of Operations (Port / Warehouse / Terminal)
+           - Yard Operations Lead
+           - Marine Operations
+           - Warehouse Managers
+           - Supply Chain Ops leads (inside warehousing org)
         
-        HOW IS HE/SHE RELEVANT (Detailed Write-up):
-        - **IF HIGH/MEDIUM**: Detailed write-up justifying the score. Focus on responsibilities (e.g., project execution, CapEx ownership, network acceptance criteria, vendor shortlisting) that align with Wi-Fi/network infra decisions.
-        - **IF LOW/NO**: **Concise** explanation of why they are peripheral, focusing on the gap (e.g., they own logistics, not infra) and the correct department/owner.
+        B. They influence decisions indirectly:
+           - They face pain points like downtime, scanner issues, IoT drop-offs
+           - They escalate issues to IT
+           - They have process responsibility
+           - They can introduce you to the real decision maker
         
-        IF NOT RELEVANT (i.e., Low or No relevance) → WHO TO TARGET + NEXT STEP:
-        - **Target Persona**: Exact persona(s) we should target (e.g., Head of IT Infra, CIO, Head of Automation).
-        - **Next Step**: Recommended next action for our sales rep (e.g., 'Ask for a warm intro to CIO', 'New connect request to Head of IT', 'Direct cold email').
+        C. They partially oversee teams that touch tech:
+           - Field technicians
+           - On-ground warehouse staff
+           - Service teams
+           - Tech support but not infra owners
+           - Ops people working with automation systems but not owning them
+        
+        3. LOW Relevance (Peripheral / Not connected to infra)
+        A person is LOW if their role does not touch infra or operations tech, even if they are senior.
+        
+        Conditions for LOW (ANY of these):
+        A. Strategy / Planning / SCM not linked to infra:
+           - Strategy roles
+           - Business planning
+           - Supply chain planners
+           - Market intelligence
+           - Procurement (general)
+           - S&OP
+           - Corporate strategy
+           - Finance / MIS owners
+        
+        B. Corporate functions:
+           - HR
+           - Marketing
+           - Admin
+           - Sales
+           - Customer service
+        
+        C. Ops roles that don't touch tech:
+           - Transport/logistics (pure transportation, not warehouse logistics)
+           - Vendor management
+           - P&L operations
+           - Purely commercial roles
+           - People who work at sister companies (e.g., Adani Cement vs Adani Ports)
+        
+        D. Tech background but irrelevant function:
+           - SAP consultant now in business role
+           - Cloud/software roles not tied to infra
+           - Digital but non-infra
+        
+        CRITICAL RULES:
+        - HIGH ONLY when person directly owns IT Infrastructure / Networks / OT Systems
+        - MEDIUM when person does not own infra but heavily depends on it for operations  
+        - LOW when person has no stake in IT/Infra and does not run infra-dependent operations
+        - COO/Operations Head: Only HIGH if they have direct infra commissioning authority, otherwise MEDIUM
         
         RETURN STRICT JSON FORMAT:
         {{
-            "designation_relevance": "High/Medium/Low/No",
-            "how_relevant": "Detailed write-up justifying the relevance score and decision influence.",
-            "target_persona": "If Low/No, the exact person to target instead (e.g., Head of IT Infra)",
-            "next_step": "If Low/No, the recommended next action for the sales rep."
+            "designation_relevance": "High/Medium/Low",
+            "how_relevant": "Detailed analysis justifying the relevance score based on strict criteria.",
+            "target_persona": "If Low/Medium, suggest the exact HIGH relevance persona to target",
+            "next_step": "Recommended action: For High='Direct outreach', For Medium='Build influence and ask for intro to IT', For Low='Ask for referral or avoid'"
         }}
         """
         
@@ -96,7 +164,7 @@ class LinkedInProfileAnalyzer:
     def _fallback_analysis(self) -> Dict[str, Any]:
         """Fallback analysis when Groq fails or JSON is unparseable."""
         return {
-            "designation_relevance": "No",
+            "designation_relevance": "Low",
             "how_relevant": "Manual analysis required - AI extraction failed.",
             "target_persona": "CIO/Head of IT Infrastructure",
             "next_step": "Manual review of profile needed."
@@ -109,7 +177,7 @@ def main():
     )
     
     st.title("LinkedIn Profile Analyzer for Wi-Fi Solutions")
-    st.markdown("Paste LinkedIn profile information below for analysis using custom relevance criteria.")
+    st.markdown("Paste LinkedIn profile information below for analysis using strict relevance criteria.")
     
     client = init_groq_client()
     if not client:
@@ -158,15 +226,24 @@ def main():
                     analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
                     
                     results_data = {
-                        "Designation Relevance": [analysis_result.get('designation_relevance', 'No')],
+                        "Designation Relevance": [analysis_result.get('designation_relevance', 'Low')],
                         "How is he relevant": [analysis_result.get('how_relevant', 'No analysis available')],
-                        "Target Persona (If Low/No)": [analysis_result.get('target_persona', 'N/A')],
-                        "Next Step (If Low/No)": [analysis_result.get('next_step', 'N/A')]
+                        "Target Persona": [analysis_result.get('target_persona', 'N/A')],
+                        "Next Step": [analysis_result.get('next_step', 'N/A')]
                     }
                     
                     results_df = pd.DataFrame(results_data)
                     
                     st.header("Analysis Results")
+                    
+                    # Color code the relevance
+                    relevance = analysis_result.get('designation_relevance', 'Low')
+                    if relevance == "High":
+                        st.success("🎯 HIGH RELEVANCE - Primary Decision Maker")
+                    elif relevance == "Medium":
+                        st.warning("📊 MEDIUM RELEVANCE - Influencer/Stakeholder")
+                    else:
+                        st.info("ℹ️ LOW RELEVANCE - Peripheral Role")
                     
                     st.dataframe(
                         results_df,
@@ -227,15 +304,28 @@ def main():
                     results_data_list = []
                     for result in all_results:
                         results_data_list.append({
-                            "Designation Relevance": result.get('designation_relevance', 'No'),
+                            "Designation Relevance": result.get('designation_relevance', 'Low'),
                             "How is he relevant": result.get('how_relevant', 'No analysis available'),
-                            "Target Persona (If Low/No)": result.get('target_persona', 'N/A'),
-                            "Next Step (If Low/No)": result.get('next_step', 'N/A')
+                            "Target Persona": result.get('target_persona', 'N/A'),
+                            "Next Step": result.get('next_step', 'N/A')
                         })
                     
                     results_df = pd.DataFrame(results_data_list)
                     
                     st.header("Batch Analysis Results")
+                    
+                    # Show summary statistics
+                    high_count = len([r for r in all_results if r.get('designation_relevance') == 'High'])
+                    medium_count = len([r for r in all_results if r.get('designation_relevance') == 'Medium'])
+                    low_count = len([r for r in all_results if r.get('designation_relevance') == 'Low'])
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("High Relevance", high_count)
+                    with col2:
+                        st.metric("Medium Relevance", medium_count)
+                    with col3:
+                        st.metric("Low Relevance", low_count)
                     
                     st.dataframe(
                         results_df,
