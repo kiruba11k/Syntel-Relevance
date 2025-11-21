@@ -32,49 +32,46 @@ class LinkedInProfileAnalyzer:
         PROFILE TEXT:
         {linkedin_text}
 
-        STRICT CLASSIFICATION RULES - FOLLOW EXACTLY:
+        STRICT CLASSIFICATION RULES - FOLLOW THESE EXAMPLES EXACTLY:
 
-        HIGH RELEVANCE (Primary Buyers) - ONLY IF:
-        - CIO, CTO, Head of IT, IT Infrastructure Head, Network Infrastructure Head
-        - Runs IT Infrastructure, Network Infrastructure, Wi-Fi/wireless systems, Data centers
-        - Head of Automation, Head of WMS/TOS, OT (Operational Technology) owner
-        - Smart Port/Smart Warehouse lead, Engineering head for scanners/IoT/sensors
-        - Infra project manager, Warehouse/Port infrastructure lead WITH budget/vendor authority
+        HIGH RELEVANCE (Primary Buyers/Decision Makers) - Examples:
+        - "Atishay holds a rare dual role — Chief Financial Officer + Chief Technology Officer — making him deeply involved in tech strategy, infra investments, digital transformation, and capex allocation."
+        - "Maheshkumar is the site Head of IT with 19+ years in port IT operations, data-centre & network management, ITIL governance, vendor & SLA management."
+        - "Rahul is the Lead IT Project Manager for project expansion & M&A, with direct experience running greenfield projects, IT/IoT infrastructure design."
+        - "As COO, Capt. Ryan owns operational performance, port development, asset optimisation and overall rollout of new infrastructure projects."
+        - "As DGM–IT he owns IT applications & technical function across Allcargo's sites, vendor management, DR/ITGC controls and has previously stood up infra for CFS/terminal projects."
+        - "As COO (Division Machines), Ajay owns manufacturing operations, engineering, projects, maintenance, in-plant warehousing and supply-chain for Ammann India's paver and compactor lines."
 
-        MEDIUM RELEVANCE (Influencers) - ONLY IF:
-        - COO, Head of Operations (Port/Warehouse/Terminal), Warehouse Managers
-        - Operations roles that DEPEND on infrastructure but don't own it
-        - Face pain points like downtime, scanner issues, IoT problems
-        - Can influence decisions or introduce to decision makers
+        MEDIUM RELEVANCE (Influencers/Operational Stakeholders) - Examples:
+        - "Surendra is a Deputy Manager IT with strengths in network design, IT operations, cloud adoption, IT procurement, and project delivery."
+        - "As COO of Adani Petronet (Dahej) he runs port operations, cargo handling, route planning and large-project cargo mobilization."
+        - "Regional Operations Manager overseeing multi-site warehousing and commissioning; owns operational KPIs and coordinates racking/WMS cutover."
+        - "As IT Operations Lead (zone-level) he runs day-to-day IT uptime, rollouts and troubleshooting across sites."
+        - "As Operations Manager he runs day-to-day warehouse/last-mile operations, manpower, SLAs, throughput and productivity."
+        - "Jaspal owns production planning, warehouse operations and SAP production-planning / MIS for the Machines division."
 
-        LOW RELEVANCE (Avoid) - IF:
-        - Strategy, Planning, Supply Chain Planning, Procurement (non-IT)
-        - HR, Marketing, Admin, Sales, Customer Service, Finance
-        - Transport/Logistics (pure transportation), Vendor management
-        - Any role that doesn't touch IT infrastructure or operations tech
+        LOW RELEVANCE (Peripheral/Not connected) - Examples:
+        - "Mayank oversees end-to-end transportation, vendor management, service management, packaging procurement, and logistics P&L."
+        - "Rajan is a Chief Operating Officer at an Adani port — senior operations leader but not an IT/infrastructure owner nor the project execution lead."
+        - "As EA to the Chief Digital Officer, Reshu helps drive group-level digital initiatives but is not an owner of infra/Wi-Fi/WMS integration."
+        - "As SCM Manager & Head of Purchase, Sanjeev handles procurement, vendor sourcing, and supply chain operations, but his scope is limited to material sourcing."
+        - "Gurmeet Singh has low relevance because his entire career is in hospitality operations within Brigade Hospitality."
 
-        CRITICAL DECISION FLOW:
-        1. FIRST check if profile matches ANY HIGH criteria -> if YES = HIGH
-        2. THEN check if profile matches ANY MEDIUM criteria -> if YES = MEDIUM  
-        3. ELSE = LOW
+        CRITICAL DECISION FACTORS:
 
-        EXAMPLES:
-        - "CIO at ABC Company" = HIGH
-        - "Head of IT Infrastructure" = HIGH
-        - "Network Manager" = HIGH
-        - "COO at Port Authority" = MEDIUM
-        - "Warehouse Operations Manager" = MEDIUM
-        - "Supply Chain Planner" = LOW
-        - "HR Manager" = LOW
-        - "Transportation Head" = LOW
+        HIGH = Direct ownership of IT infrastructure, network systems, or warehouse/port digital systems WITH budget authority and vendor selection power.
+
+        MEDIUM = Operational roles that depend on infrastructure but don't own it, can influence decisions or feel operational pain points.
+
+        LOW = Roles focused on transportation, pure procurement, HR, finance, strategy, sales, or any function not touching infrastructure.
 
         RETURN ONLY VALID JSON - NO OTHER TEXT:
 
         {{
             "designation_relevance": "High/Medium/Low",
-            "how_relevant": "Brief explanation based on role and responsibilities",
-            "target_persona": "If Low/Medium, suggest correct High persona",
-            "next_step": "High='Direct outreach', Medium='Build influence', Low='Avoid or ask referral'"
+            "how_relevant": "Detailed explanation following the example format, focusing on what they own/don't own and their decision authority",
+            "target_persona": "If Low/Medium, suggest the correct High relevance persona to target",
+            "next_step": "Recommended action based on relevance level"
         }}
         """
         
@@ -83,7 +80,7 @@ class LinkedInProfileAnalyzer:
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
                 temperature=0.1,
-                max_tokens=800
+                max_tokens=1000
             )
             
             result_text = response.choices[0].message.content.strip()
@@ -129,23 +126,26 @@ def main():
     st.markdown("Analyze LinkedIn profiles for Wi-Fi/Network Infrastructure relevance using strict criteria")
     
     # Sidebar with examples
-    st.sidebar.header("Quick Examples")
+    st.sidebar.header("Classification Guidelines")
     st.sidebar.markdown("""
-    HIGH Examples:
-    - CIO, CTO, Head of IT
-    - IT Infrastructure Manager
-    - Network Infrastructure Head
-    - Head of Automation
-    
-    MEDIUM Examples:
-    - COO, Operations Head
-    - Warehouse Operations Manager
-    - Terminal Operations Lead
-    
-    LOW Examples:
-    - HR Manager, Finance Head
-    - Supply Chain Planner
-    - Transportation Manager
+    **High Relevance:**
+    - Direct IT infrastructure ownership
+    - Network/Wi-Fi systems responsibility  
+    - Budget authority for tech infrastructure
+    - Vendor selection power
+    - Greenfield project commissioning roles
+
+    **Medium Relevance:**
+    - Operations roles dependent on infrastructure
+    - Can influence decisions indirectly
+    - Feel operational pain points
+    - Technical evaluators without final authority
+
+    **Low Relevance:**
+    - Transportation/logistics only
+    - Pure procurement without tech focus
+    - HR, Finance, Strategy roles
+    - Any role not touching infrastructure
     """)
     
     client = init_groq_client()
@@ -160,12 +160,14 @@ def main():
     with tab1:
         st.header("Single Profile Analysis")
         
-        # Example profiles for testing
+        # Example profiles for testing based on your examples
         example_profiles = {
             "Select Example": "",
-            "CIO Example": "John Smith\nChief Information Officer\nABC Manufacturing\nResponsible for IT infrastructure, network systems, data centers, and technology budget approval. Leads digital transformation initiatives.",
-            "COO Example": "Sarah Johnson\nChief Operating Officer\nXYZ Logistics\nOversees warehouse operations, terminal management, and supply chain operations. Manages operational efficiency and process improvement.",
-            "HR Example": "Mike Brown\nHR Director\nGlobal Corporation\nResponsible for talent acquisition, employee relations, and organizational development across multiple locations."
+            "High Example - CIO/CTO": "Atishay Kumar\nChief Financial Officer + Chief Technology Officer\nABC Corporation\nResponsible for tech strategy, infrastructure investments, digital transformation, capex allocation, vendor evaluation frameworks, and ROI justification for new warehouses. Deeply involved in technology architecture, IoT frameworks, and system integrations.",
+            "High Example - IT Head": "Maheshkumar Patel\nHead of IT Infrastructure\nPort Operations Ltd\n19+ years in port IT operations, data-centre & network management, ITIL governance, vendor & SLA management. Owns site-level IT operations, vendor execution, SLAs, asset inventory, and site project rollouts.",
+            "Medium Example - Operations": "Sarah Johnson\nChief Operating Officer\nLogistics Company\nOversees warehouse operations, terminal management, and supply chain operations. Manages operational efficiency and process improvement. Faces pain points like downtime and scanner issues but doesn't own IT infrastructure.",
+            "Low Example - Transportation": "Mayank Sharma\nHead of Transportation and Logistics\nSupply Chain Co\nOversees end-to-end transportation, vendor management, service management, packaging procurement, and logistics P&L. Responsibilities tied to movement of goods, not warehouse infrastructure or IT systems.",
+            "Low Example - HR": "Mike Brown\nHR Director\nGlobal Corporation\nResponsible for talent acquisition, employee relations, and organizational development across multiple locations. No involvement in IT infrastructure or technology decisions."
         }
         
         selected_example = st.selectbox("Load example profile:", list(example_profiles.keys()))
