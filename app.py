@@ -10,7 +10,6 @@ from typing import Dict, Any
 def init_groq_client():
     """Initializes the Groq client, caching the resource."""
     try:
-        # st.secrets is used to securely access environment variables/secrets
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         return client
     except Exception as e:
@@ -28,114 +27,54 @@ class LinkedInProfileAnalyzer:
         """
         
         prompt = f"""
-        EXTRACT AND ANALYZE THIS LINKEDIN PROFILE FOR Wi-Fi/NETWORK INFRASTRUCTURE SOLUTIONS
-        
-        LINKEDIN PROFILE TEXT:
+        ANALYZE THIS LINKEDIN PROFILE FOR Wi-Fi/NETWORK INFRASTRUCTURE RELEVANCE:
+
+        PROFILE TEXT:
         {linkedin_text}
-        
-        CONTEXT FOR ANALYSIS:
-        - Our Company: Syntel + Altai Super Wi-Fi (Enterprise Wi-Fi/Network Infrastructure)
-        - We sell Wi-Fi and network infrastructure solutions (Network Infra, Wi-Fi, IoT, OT/IT Integration)
-        - Geography Focus: India
-        
-        STRICT RELEVANCE CRITERIA - FOLLOW EXACTLY:
-        
-        1. HIGH Relevance (Primary Buyers / Decision Makers)
-        A person is HIGH only if they directly own IT infrastructure or warehouse/port digital systems.
-        
-        Conditions for HIGH (ANY of these):
-        A. Direct ownership of network / IT infra:
-           - Runs IT Infrastructure
-           - Runs Network Infrastructure  
-           - Runs Wi-Fi / wireless systems
-           - Runs Data centers / connectivity
-           - CIO / CTO / GM IT / Head IT Infra
-           - Any role that signs off network vendors
-        
-        B. Direct ownership of warehouse/port tech systems:
-           - Head of Automation
-           - Head of WMS / TOS
-           - Head of Digital Transformation (only infra-heavy)
-           - OT (Operational Technology) owner
-           - Smart Port / Smart Warehouse lead
-           - Engineering head responsible for scanners, IoT, rack systems, sensors
-        
-        C. Direct role in infra commissioning:
-           - Infra project manager (IT/Tech)
-           - Warehouse infrastructure lead
-           - Port technology commissioning lead
-           - They have: Budget authority, Technical evaluation responsibility, Vendor selection power
-        
-        2. MEDIUM Relevance (Influencers / Operational Stakeholders)
-        A person is MEDIUM if they do NOT own infra but their operations depend on it.
-        
-        Conditions for MEDIUM (ANY of these):
-        A. Operational leaders affected by connectivity:
-           - COO
-           - Head of Operations (Port / Warehouse / Terminal)
-           - Yard Operations Lead
-           - Marine Operations
-           - Warehouse Managers
-           - Supply Chain Ops leads (inside warehousing org)
-        
-        B. They influence decisions indirectly:
-           - They face pain points like downtime, scanner issues, IoT drop-offs
-           - They escalate issues to IT
-           - They have process responsibility
-           - They can introduce you to the real decision maker
-        
-        C. They partially oversee teams that touch tech:
-           - Field technicians
-           - On-ground warehouse staff
-           - Service teams
-           - Tech support but not infra owners
-           - Ops people working with automation systems but not owning them
-        
-        3. LOW Relevance (Peripheral / Not connected to infra)
-        A person is LOW if their role does not touch infra or operations tech, even if they are senior.
-        
-        Conditions for LOW (ANY of these):
-        A. Strategy / Planning / SCM not linked to infra:
-           - Strategy roles
-           - Business planning
-           - Supply chain planners
-           - Market intelligence
-           - Procurement (general)
-           - S&OP
-           - Corporate strategy
-           - Finance / MIS owners
-        
-        B. Corporate functions:
-           - HR
-           - Marketing
-           - Admin
-           - Sales
-           - Customer service
-        
-        C. Ops roles that don't touch tech:
-           - Transport/logistics (pure transportation, not warehouse logistics)
-           - Vendor management
-           - P&L operations
-           - Purely commercial roles
-           - People who work at sister companies (e.g., Adani Cement vs Adani Ports)
-        
-        D. Tech background but irrelevant function:
-           - SAP consultant now in business role
-           - Cloud/software roles not tied to infra
-           - Digital but non-infra
-        
-        CRITICAL RULES:
-        - HIGH ONLY when person directly owns IT Infrastructure / Networks / OT Systems
-        - MEDIUM when person does not own infra but heavily depends on it for operations  
-        - LOW when person has no stake in IT/Infra and does not run infra-dependent operations
-        - COO/Operations Head: Only HIGH if they have direct infra commissioning authority, otherwise MEDIUM
-        
-        RETURN STRICT JSON FORMAT:
+
+        STRICT CLASSIFICATION RULES - FOLLOW EXACTLY:
+
+        HIGH RELEVANCE (Primary Buyers) - ONLY IF:
+        - CIO, CTO, Head of IT, IT Infrastructure Head, Network Infrastructure Head
+        - Runs IT Infrastructure, Network Infrastructure, Wi-Fi/wireless systems, Data centers
+        - Head of Automation, Head of WMS/TOS, OT (Operational Technology) owner
+        - Smart Port/Smart Warehouse lead, Engineering head for scanners/IoT/sensors
+        - Infra project manager, Warehouse/Port infrastructure lead WITH budget/vendor authority
+
+        MEDIUM RELEVANCE (Influencers) - ONLY IF:
+        - COO, Head of Operations (Port/Warehouse/Terminal), Warehouse Managers
+        - Operations roles that DEPEND on infrastructure but don't own it
+        - Face pain points like downtime, scanner issues, IoT problems
+        - Can influence decisions or introduce to decision makers
+
+        LOW RELEVANCE (Avoid) - IF:
+        - Strategy, Planning, Supply Chain Planning, Procurement (non-IT)
+        - HR, Marketing, Admin, Sales, Customer Service, Finance
+        - Transport/Logistics (pure transportation), Vendor management
+        - Any role that doesn't touch IT infrastructure or operations tech
+
+        CRITICAL DECISION FLOW:
+        1. FIRST check if profile matches ANY HIGH criteria -> if YES = HIGH
+        2. THEN check if profile matches ANY MEDIUM criteria -> if YES = MEDIUM  
+        3. ELSE = LOW
+
+        EXAMPLES:
+        - "CIO at ABC Company" = HIGH
+        - "Head of IT Infrastructure" = HIGH
+        - "Network Manager" = HIGH
+        - "COO at Port Authority" = MEDIUM
+        - "Warehouse Operations Manager" = MEDIUM
+        - "Supply Chain Planner" = LOW
+        - "HR Manager" = LOW
+        - "Transportation Head" = LOW
+
+        RETURN ONLY VALID JSON - NO OTHER TEXT:
+
         {{
             "designation_relevance": "High/Medium/Low",
-            "how_relevant": "Detailed analysis justifying the relevance score based on strict criteria.",
-            "target_persona": "If Low/Medium, suggest the exact HIGH relevance persona to target",
-            "next_step": "Recommended action: For High='Direct outreach', For Medium='Build influence and ask for intro to IT', For Low='Ask for referral or avoid'"
+            "how_relevant": "Brief explanation based on role and responsibilities",
+            "target_persona": "If Low/Medium, suggest correct High persona",
+            "next_step": "High='Direct outreach', Medium='Build influence', Low='Avoid or ask referral'"
         }}
         """
         
@@ -143,31 +82,41 @@ class LinkedInProfileAnalyzer:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant",
-                temperature=0.3,
-                max_tokens=1500
+                temperature=0.1,
+                max_tokens=800
             )
             
             result_text = response.choices[0].message.content.strip()
             
+            # Debug: Show raw response
+            st.sidebar.text("Raw AI Response:")
+            st.sidebar.text(result_text[:500] + "..." if len(result_text) > 500 else result_text)
+            
             # Extract JSON from response using regex
-            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            json_match = re.search(r'\{[^{}]*\{.*\}[^{}]*\}|\{.*\}', result_text, re.DOTALL)
             if json_match:
                 json_string = json_match.group().strip()
-                return json.loads(json_string)
+                parsed_data = json.loads(json_string)
+                
+                # Validate the response has required fields
+                if all(key in parsed_data for key in ['designation_relevance', 'how_relevant', 'target_persona', 'next_step']):
+                    return parsed_data
+                else:
+                    return self._fallback_analysis("Missing required fields in AI response")
             else:
-                return self._fallback_analysis()
+                return self._fallback_analysis("No JSON found in AI response")
                 
         except Exception as e:
             st.error(f"Analysis error: {e}")
-            return self._fallback_analysis()
+            return self._fallback_analysis(f"API error: {str(e)}")
     
-    def _fallback_analysis(self) -> Dict[str, Any]:
+    def _fallback_analysis(self, reason: str) -> Dict[str, Any]:
         """Fallback analysis when Groq fails or JSON is unparseable."""
         return {
             "designation_relevance": "Low",
-            "how_relevant": "Manual analysis required - AI extraction failed.",
+            "how_relevant": f"Manual analysis required - {reason}",
             "target_persona": "CIO/Head of IT Infrastructure",
-            "next_step": "Manual review of profile needed."
+            "next_step": "Manual review of profile needed"
         }
 
 def main():
@@ -176,8 +125,28 @@ def main():
         layout="wide"
     )
     
-    st.title("LinkedIn Profile Analyzer for Wi-Fi Solutions")
-    st.markdown("Paste LinkedIn profile information below for analysis using strict relevance criteria.")
+    st.title("LinkedIn Profile Analyzer for Wi-Fi/Network Solutions")
+    st.markdown("Analyze LinkedIn profiles for Wi-Fi/Network Infrastructure relevance using strict criteria")
+    
+    # Sidebar with examples
+    st.sidebar.header("Quick Examples")
+    st.sidebar.markdown("""
+    HIGH Examples:
+    - CIO, CTO, Head of IT
+    - IT Infrastructure Manager
+    - Network Infrastructure Head
+    - Head of Automation
+    
+    MEDIUM Examples:
+    - COO, Operations Head
+    - Warehouse Operations Manager
+    - Terminal Operations Lead
+    
+    LOW Examples:
+    - HR Manager, Finance Head
+    - Supply Chain Planner
+    - Transportation Manager
+    """)
     
     client = init_groq_client()
     if not client:
@@ -186,89 +155,39 @@ def main():
     
     analyzer = LinkedInProfileAnalyzer(client)
     
-    st.markdown("""
-    <style>
-    .dataframe {
-        width: 100%;
-    }
-    .dataframe th {
-        background-color: #1E3A8A;
-        color: white;
-        padding: 10px;
-        text-align: left;
-    }
-    .dataframe td {
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
-    }
-    .dataframe tr:hover {
-        background-color: #f5f5f5;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     tab1, tab2 = st.tabs(["Single Profile Analysis", "Batch Analysis"])
     
     with tab1:
         st.header("Single Profile Analysis")
         
+        # Example profiles for testing
+        example_profiles = {
+            "Select Example": "",
+            "CIO Example": "John Smith\nChief Information Officer\nABC Manufacturing\nResponsible for IT infrastructure, network systems, data centers, and technology budget approval. Leads digital transformation initiatives.",
+            "COO Example": "Sarah Johnson\nChief Operating Officer\nXYZ Logistics\nOversees warehouse operations, terminal management, and supply chain operations. Manages operational efficiency and process improvement.",
+            "HR Example": "Mike Brown\nHR Director\nGlobal Corporation\nResponsible for talent acquisition, employee relations, and organizational development across multiple locations."
+        }
+        
+        selected_example = st.selectbox("Load example profile:", list(example_profiles.keys()))
+        
         linkedin_text = st.text_area(
             "LinkedIn Profile Information",
+            value=example_profiles[selected_example],
             placeholder="Paste the entire LinkedIn profile text here...",
-            height=300
+            height=300,
+            help="Include full profile with title, company, and responsibilities"
         )
         
-        if st.button("Analyze Profile", type="primary"):
+        if st.button("Analyze Profile", type="primary", key="analyze_single"):
             if not linkedin_text.strip():
                 st.warning("Please paste LinkedIn profile information to analyze")
             else:
                 with st.spinner("AI is analyzing the profile..."):
                     analysis_result = analyzer.extract_and_analyze_profile(linkedin_text)
                     
-                    results_data = {
-                        "Designation Relevance": [analysis_result.get('designation_relevance', 'Low')],
-                        "How is he relevant": [analysis_result.get('how_relevant', 'No analysis available')],
-                        "Target Persona": [analysis_result.get('target_persona', 'N/A')],
-                        "Next Step": [analysis_result.get('next_step', 'N/A')]
-                    }
-                    
-                    results_df = pd.DataFrame(results_data)
-                    
-                    st.header("Analysis Results")
-                    
-                    # Color code the relevance
-                    relevance = analysis_result.get('designation_relevance', 'Low')
-                    if relevance == "High":
-                        st.success(" HIGH RELEVANCE - Primary Decision Maker")
-                    elif relevance == "Medium":
-                        st.warning(" MEDIUM RELEVANCE - Influencer/Stakeholder")
-                    else:
-                        st.info(" LOW RELEVANCE - Peripheral Role")
-                    
-                    st.dataframe(
-                        results_df,
-                        use_container_width=True,
-                        hide_index=True
-                    )
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        csv = results_df.to_csv(index=False)
-                        st.download_button(
-                            label="Download as CSV",
-                            data=csv,
-                            file_name="profile_analysis.csv",
-                            mime="text/csv"
-                        )
-                    with col2:
-                        tsv = results_df.to_csv(index=False, sep='\t')
-                        st.download_button(
-                            label="Download as TSV",
-                            data=tsv,
-                            file_name="profile_analysis.tsv",
-                            mime="text/tab-separated-values"
-                        )
-
+                    # Display results with better formatting
+                    _display_single_results(analysis_result)
+    
     with tab2:
         st.header("Batch Profile Analysis")
         
@@ -282,74 +201,137 @@ def main():
             content = uploaded_file.getvalue().decode("utf-8")
             profiles = [p.strip() for p in content.split("===PROFILE===") if p.strip()]
             
-            st.info(f"Found **{len(profiles)}** profiles in file. Ready to analyze.")
+            st.info(f"Found {len(profiles)} profiles in file. Ready to analyze.")
             
-            if st.button("Analyze All Profiles", type="primary"):
-                
-                analyzer = LinkedInProfileAnalyzer(client)
-                all_results = []
-                
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                for i, profile_text in enumerate(profiles):
-                    status_text.text(f"Analyzing profile {i+1}/{len(profiles)}...")
-                    analysis = analyzer.extract_and_analyze_profile(profile_text)
-                    all_results.append(analysis)
-                    progress_bar.progress((i + 1) / len(profiles))
-                
-                status_text.text("Batch analysis complete.")
-                
-                if all_results:
-                    results_data_list = []
-                    for result in all_results:
-                        results_data_list.append({
-                            "Designation Relevance": result.get('designation_relevance', 'Low'),
-                            "How is he relevant": result.get('how_relevant', 'No analysis available'),
-                            "Target Persona": result.get('target_persona', 'N/A'),
-                            "Next Step": result.get('next_step', 'N/A')
-                        })
+            if st.button("Analyze All Profiles", type="primary", key="analyze_batch"):
+                with st.spinner(f"Analyzing {len(profiles)} profiles..."):
+                    all_results = []
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     
-                    results_df = pd.DataFrame(results_data_list)
+                    for i, profile_text in enumerate(profiles):
+                        status_text.text(f"Analyzing profile {i+1}/{len(profiles)}...")
+                        analysis = analyzer.extract_and_analyze_profile(profile_text)
+                        all_results.append(analysis)
+                        progress_bar.progress((i + 1) / len(profiles))
                     
-                    st.header("Batch Analysis Results")
+                    status_text.text("Batch analysis complete!")
                     
-                    # Show summary statistics
-                    high_count = len([r for r in all_results if r.get('designation_relevance') == 'High'])
-                    medium_count = len([r for r in all_results if r.get('designation_relevance') == 'Medium'])
-                    low_count = len([r for r in all_results if r.get('designation_relevance') == 'Low'])
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("High Relevance", high_count)
-                    with col2:
-                        st.metric("Medium Relevance", medium_count)
-                    with col3:
-                        st.metric("Low Relevance", low_count)
-                    
-                    st.dataframe(
-                        results_df,
-                        use_container_width=True,
-                        hide_index=True
-                    )
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        csv = results_df.to_csv(index=False)
-                        st.download_button(
-                            label="Download as CSV",
-                            data=csv,
-                            file_name="batch_analysis.csv",
-                            mime="text/csv"
-                        )
-                    with col2:
-                        tsv = results_df.to_csv(index=False, sep='\t')
-                        st.download_button(
-                            label="Download as TSV",
-                            data=tsv,
-                            file_name="batch_analysis.tsv",
-                            mime="text/tab-separated-values"
-                        )
+                    if all_results:
+                        _display_batch_results(all_results)
+
+def _display_single_results(analysis_result: Dict[str, Any]):
+    """Display single profile analysis results"""
+    relevance = analysis_result.get('designation_relevance', 'Low').lower()
+    
+    # Create colored boxes for relevance
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if relevance == "high":
+            st.success("HIGH RELEVANCE")
+            st.metric("Decision Level", "Primary Buyer")
+        else:
+            st.info("HIGH RELEVANCE")
+            
+    with col2:
+        if relevance == "medium":
+            st.warning("MEDIUM RELEVANCE")
+            st.metric("Decision Level", "Influencer")
+        else:
+            st.info("MEDIUM RELEVANCE")
+            
+    with col3:
+        if relevance == "low":
+            st.error("LOW RELEVANCE")
+            st.metric("Decision Level", "Avoid")
+        else:
+            st.info("LOW RELEVANCE")
+    
+    # Detailed results
+    st.subheader("Analysis Details")
+    
+    results_data = {
+        "Metric": ["Relevance Level", "Analysis", "Target Persona", "Recommended Action"],
+        "Details": [
+            analysis_result.get('designation_relevance', 'Low'),
+            analysis_result.get('how_relevant', 'No analysis available'),
+            analysis_result.get('target_persona', 'N/A'),
+            analysis_result.get('next_step', 'N/A')
+        ]
+    }
+    
+    results_df = pd.DataFrame(results_data)
+    st.table(results_df)
+    
+    # Download buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        csv = results_df.to_csv(index=False)
+        st.download_button(
+            label="Download as CSV",
+            data=csv,
+            file_name="profile_analysis.csv",
+            mime="text/csv"
+        )
+    with col2:
+        json_data = json.dumps(analysis_result, indent=2)
+        st.download_button(
+            label="Download as JSON",
+            data=json_data,
+            file_name="profile_analysis.json",
+            mime="application/json"
+        )
+
+def _display_batch_results(all_results: list):
+    """Display batch analysis results"""
+    results_data_list = []
+    for i, result in enumerate(all_results):
+        results_data_list.append({
+            "Profile": f"Profile {i+1}",
+            "Relevance": result.get('designation_relevance', 'Low'),
+            "Analysis": result.get('how_relevant', 'No analysis')[:100] + "..." if len(result.get('how_relevant', '')) > 100 else result.get('how_relevant', 'No analysis'),
+            "Target Persona": result.get('target_persona', 'N/A'),
+            "Next Step": result.get('next_step', 'N/A')
+        })
+    
+    results_df = pd.DataFrame(results_data_list)
+    
+    # Summary statistics
+    high_count = len([r for r in all_results if r.get('designation_relevance', '').lower() == 'high'])
+    medium_count = len([r for r in all_results if r.get('designation_relevance', '').lower() == 'medium'])
+    low_count = len([r for r in all_results if r.get('designation_relevance', '').lower() == 'low'])
+    
+    st.subheader("Batch Analysis Summary")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("High Relevance", high_count)
+    with col2:
+        st.metric("Medium Relevance", medium_count)
+    with col3:
+        st.metric("Low Relevance", low_count)
+    
+    st.subheader("Detailed Results")
+    st.dataframe(results_df, use_container_width=True)
+    
+    # Download options
+    col1, col2 = st.columns(2)
+    with col1:
+        csv = results_df.to_csv(index=False)
+        st.download_button(
+            label="Download CSV",
+            data=csv,
+            file_name="batch_analysis.csv",
+            mime="text/csv"
+        )
+    with col2:
+        tsv = results_df.to_csv(index=False, sep='\t')
+        st.download_button(
+            label="Download TSV",
+            data=tsv,
+            file_name="batch_analysis.tsv",
+            mime="text/tab-separated-values"
+        )
 
 if __name__ == "__main__":
     main()
