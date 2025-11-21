@@ -239,11 +239,11 @@ def main():
                     # Color code the relevance
                     relevance = analysis_result.get('designation_relevance', 'Low')
                     if relevance == "High":
-                        st.success("🎯 HIGH RELEVANCE - Primary Decision Maker")
+                        st.success(" HIGH RELEVANCE - Primary Decision Maker")
                     elif relevance == "Medium":
-                        st.warning("📊 MEDIUM RELEVANCE - Influencer/Stakeholder")
+                        st.warning(" MEDIUM RELEVANCE - Influencer/Stakeholder")
                     else:
-                        st.info("ℹ️ LOW RELEVANCE - Peripheral Role")
+                        st.info(" LOW RELEVANCE - Peripheral Role")
                     
                     st.dataframe(
                         results_df,
