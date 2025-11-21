@@ -80,7 +80,7 @@ Follow the steps below. No technical background needed.
 If you are using Git:
 
 ```
-git clone [<repository-url>](https://github.com/kiruba11k/Syntel-Relevance.git)
+git clone https://github.com/kiruba11k/Syntel-Relevance.git
 cd Syntel-Relevance
 ```
 
